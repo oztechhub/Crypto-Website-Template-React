@@ -1,0 +1,2096 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'dart:math';
+
+void main() => runApp(BitozApp());
+
+class BitozApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Bitoz - Crypto Trading',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        fontFamily: 'Roboto',
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: Color(0xFF0F172A),
+        cardColor: Color(0xFF1E293B),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Color(0xFF0F172A),
+          elevation: 0,
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: Color(0xFF1E293B),
+          selectedItemColor: Colors.blue,
+          unselectedItemColor: Colors.grey,
+        ),
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => SplashScreen(),
+        '/login': (context) => LoginScreen(),
+        '/home': (context) => HomeScreen(),
+        '/settings': (context) => SettingsScreen(),
+        '/trade': (context) => TradeScreen(),
+        '/portfolio': (context) => PortfolioScreen(),
+        '/alerts': (context) => AlertsScreen(),
+        '/news': (context) => NewsScreen(),
+      },
+    );
+  }
+}
+
+// Splash Screen with animation
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    );
+    _controller.forward();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    await Future.delayed(Duration(seconds: 3));
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    
+    Navigator.pushReplacementNamed(
+      context,
+      isLoggedIn ? '/home' : '/login',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ScaleTransition(
+                scale: _animation,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue, Colors.purple],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
+                      )
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.currency_bitcoin,
+                    size: 80,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              SizedBox(height: 30),
+              Text(
+                'Bitoz',
+                style: TextStyle(
+                  fontSize: 42,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Advanced Crypto Trading Platform',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                ),
+              ),
+              SizedBox(height: 50),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Enhanced Login Screen with biometric option
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _rememberMe = false;
+
+  Future<void> _login() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      
+      await Future.delayed(Duration(seconds: 2));
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      if (_rememberMe) {
+        await prefs.setString('email', _emailController.text);
+      }
+      
+      setState(() => _isLoading = false);
+      Navigator.pushReplacementNamed(context, '/home');
+    }
+  }
+
+  Future<void> _biometricLogin() async {
+    // Simulate biometric authentication
+    setState(() => _isLoading = true);
+    await Future.delayed(Duration(seconds: 1));
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+    
+    setState(() => _isLoading = false);
+    Navigator.pushReplacementNamed(context, '/home');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // App Logo
+            Icon(
+              Icons.currency_bitcoin,
+              size: 80,
+              color: Colors.blue,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Welcome to Bitoz',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Sign in to continue',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+              ),
+            ),
+            SizedBox(height: 40),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _emailController,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      prefixIcon: Icon(Icons.email, color: Colors.blue),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.white24),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.blue),
+                      ),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || !value.contains('@')) {
+                        return 'Please enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      prefixIcon: Icon(Icons.lock, color: Colors.blue),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword 
+                          ? Icons.visibility 
+                          : Icons.visibility_off, color: Colors.white70),
+                        onPressed: () {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.white24),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.blue),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _rememberMe,
+                        onChanged: (value) {
+                          setState(() => _rememberMe = value!);
+                        },
+                        activeColor: Colors.blue,
+                      ),
+                      Text('Remember me', style: TextStyle(color: Colors.white70)),
+                      Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          // Forgot password functionality
+                        },
+                        child: Text('Forgot Password?', style: TextStyle(color: Colors.blue)),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24),
+                  _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : Column(
+                        children: [
+                          ElevatedButton(
+                            onPressed: _login,
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              primary: Colors.blue,
+                            ),
+                            child: Text(
+                              'LOGIN',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _biometricLogin,
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              primary: Colors.transparent,
+                              side: BorderSide(color: Colors.blue),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.fingerprint, color: Colors.blue),
+                                SizedBox(width: 10),
+                                Text(
+                                  'USE BIOMETRIC',
+                                  style: TextStyle(fontSize: 16, color: Colors.blue),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                ],
+              ),
+            ),
+            SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text("Don't have an account?", style: TextStyle(color: Colors.white70)),
+                TextButton(
+                  onPressed: () {
+                    // Navigate to signup
+                  },
+                  child: Text('Sign Up', style: TextStyle(color: Colors.blue)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Enhanced Home Screen with real-time updates
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+  final List<Widget> _screens = [
+    DashboardScreen(),
+    MarketsScreen(),
+    TradeScreen(),
+    PortfolioScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Bitoz'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.pushNamed(context, '/alerts');
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.article),
+            onPressed: () {
+              Navigator.pushNamed(context, '/news');
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.settings),
+            onPressed: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+          ),
+        ],
+      ),
+      body: _screens[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+        },
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.show_chart),
+            label: 'Markets',
+          ),
+          BottomNavigationBarItem(
+            icon: Icons.swap_horiz),
+            label: 'Trade',
+          ),
+          BottomNavigationBarItem(
+            icon: Icons.account_balance_wallet),
+            label: 'Portfolio',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Enhanced Dashboard Screen with real-time data
+class DashboardScreen extends StatefulWidget {
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  double _portfolioValue = 24562.75;
+  double _portfolioChange = 5.2;
+  List<Map<String, dynamic>> _topCryptos = [];
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTopCryptos();
+    _startRealTimeUpdates();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _loadTopCryptos() {
+    setState(() {
+      _topCryptos = [
+        {'name': 'Bitcoin', 'symbol': 'BTC', 'price': 42356.78, 'change': 2.4, 'isPositive': true},
+        {'name': 'Ethereum', 'symbol': 'ETH', 'price': 2845.32, 'change': -1.2, 'isPositive': false},
+        {'name': 'Cardano', 'symbol': 'ADA', 'price': 0.58, 'change': 5.7, 'isPositive': true},
+        {'name': 'Solana', 'symbol': 'SOL', 'price': 98.45, 'change': 3.1, 'isPositive': true},
+        {'name': 'Polkadot', 'symbol': 'DOT', 'price': 7.23, 'change': -0.8, 'isPositive': false},
+      ];
+    });
+  }
+
+  void _startRealTimeUpdates() {
+    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
+      setState(() {
+        // Simulate price changes
+        _portfolioValue += (Random().nextDouble() - 0.5) * 100;
+        _portfolioChange += (Random().nextDouble() - 0.5) * 0.5;
+        
+        for (var crypto in _topCryptos) {
+          crypto['price'] += (Random().nextDouble() - 0.5) * crypto['price'] * 0.01;
+          crypto['change'] += (Random().nextDouble() - 0.5) * 0.5;
+          crypto['isPositive'] = crypto['change'] >= 0;
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Portfolio Summary with chart
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Portfolio Value',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                      Text(
+                        '24h Change',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '\$${_portfolioValue.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _portfolioChange >= 0 ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_portfolioChange >= 0 ? '+' : ''}${_portfolioChange.toStringAsFixed(2)}%',
+                          style: TextStyle(
+                            color: _portfolioChange >= 0 ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  Container(
+                    height: 150,
+                    child: Placeholder(), // Replace with actual chart
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+          
+          // Quick Actions
+          Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _QuickAction(
+                icon: Icons.add,
+                title: 'Buy',
+                color: Colors.green,
+                onTap: () {
+                  Navigator.pushNamed(context, '/trade');
+                },
+              ),
+              _QuickAction(
+                icon: Icons.remove,
+                title: 'Sell',
+                color: Colors.red,
+                onTap: () {
+                  Navigator.pushNamed(context, '/trade');
+                },
+              ),
+              _QuickAction(
+                icon: Icons.swap_horiz,
+                title: 'Convert',
+                color: Colors.blue,
+                onTap: () {
+                  // Convert functionality
+                },
+              ),
+              _QuickAction(
+                icon: Icons.send,
+                title: 'Send',
+                color: Colors.purple,
+                onTap: () {
+                  // Send functionality
+                },
+              ),
+              _QuickAction(
+                icon: Icons.notifications,
+                title: 'Alerts',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.pushNamed(context, '/alerts');
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          
+          // Market Overview
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Market Overview',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _currentIndex = 1; // Switch to Markets tab
+                  });
+                },
+                child: Text('View All', style: TextStyle(color: Colors.blue)),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Column(
+            children: _topCryptos.map((crypto) => _MarketItem(
+              name: crypto['name'],
+              symbol: crypto['symbol'],
+              price: crypto['price'],
+              change: crypto['change'],
+              isPositive: crypto['isPositive'],
+            )).toList(),
+          ),
+          SizedBox(height: 20),
+          
+          // News Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Latest News',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/news');
+                },
+                child: Text('View All', style: TextStyle(color: Colors.blue)),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          _NewsItem(
+            title: 'Bitcoin Surges Past \$43,000 Amid Institutional Adoption',
+            time: '2 hours ago',
+          ),
+          _NewsItem(
+            title: 'Ethereum 2.0 Upgrade Scheduled for Next Month',
+            time: '5 hours ago',
+          ),
+          _NewsItem(
+            title: 'Regulatory Developments in Crypto Markets',
+            time: '1 day ago',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Markets Screen with search and filters
+class MarketsScreen extends StatefulWidget {
+  @override
+  _MarketsScreenState createState() => _MarketsScreenState();
+}
+
+class _MarketsScreenState extends State<MarketsScreen> {
+  TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _allCryptos = [];
+  List<Map<String, dynamic>> _filteredCryptos = [];
+  String _sortCriteria = 'name';
+  bool _isAscending = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCryptos();
+    _searchController.addListener(_filterCryptos);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _loadCryptos() {
+    setState(() {
+      _allCryptos = [
+        {'name': 'Bitcoin', 'symbol': 'BTC', 'price': 42356.78, 'change': 2.4, 'isPositive': true, 'marketCap': 825000000000},
+        {'name': 'Ethereum', 'symbol': 'ETH', 'price': 2845.32, 'change': -1.2, 'isPositive': false, 'marketCap': 342000000000},
+        {'name': 'Cardano', 'symbol': 'ADA', 'price': 0.58, 'change': 5.7, 'isPositive': true, 'marketCap': 20500000000},
+        {'name': 'Solana', 'symbol': 'SOL', 'price': 98.45, 'change': 3.1, 'isPositive': true, 'marketCap': 42000000000},
+        {'name': 'Polkadot', 'symbol': 'DOT', 'price': 7.23, 'change': -0.8, 'isPositive': false, 'marketCap': 9500000000},
+        {'name': 'Dogecoin', 'symbol': 'DOGE', 'price': 0.089, 'change': 1.5, 'isPositive': true, 'marketCap': 12500000000},
+        {'name': 'Avalanche', 'symbol': 'AVAX', 'price': 35.67, 'change': 4.2, 'isPositive': true, 'marketCap': 13000000000},
+        {'name': 'Chainlink', 'symbol': 'LINK', 'price': 14.89, 'change': -2.1, 'isPositive': false, 'marketCap': 7800000000},
+      ];
+      _filteredCryptos = List.from(_allCryptos);
+    });
+  }
+
+  void _filterCryptos() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredCryptos = _allCryptos.where((crypto) {
+        return crypto['name'].toLowerCase().contains(query) ||
+            crypto['symbol'].toLowerCase().contains(query);
+      }).toList();
+      _sortCryptos();
+    });
+  }
+
+  void _sortCryptos() {
+    setState(() {
+      _filteredCryptos.sort((a, b) {
+        if (_sortCriteria == 'name') {
+          return _isAscending 
+            ? a['name'].compareTo(b['name'])
+            : b['name'].compareTo(a['name']);
+        } else if (_sortCriteria == 'price') {
+          return _isAscending 
+            ? a['price'].compareTo(b['price'])
+            : b['price'].compareTo(a['price']);
+        } else if (_sortCriteria == 'change') {
+          return _isAscending 
+            ? a['change'].compareTo(b['change'])
+            : b['change'].compareTo(a['change']);
+        } else if (_sortCriteria == 'marketCap') {
+          return _isAscending 
+            ? a['marketCap'].compareTo(b['marketCap'])
+            : b['marketCap'].compareTo(a['marketCap']);
+        }
+        return 0;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _searchController,
+            style: TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Search cryptocurrencies',
+              labelStyle: TextStyle(color: Colors.white70),
+              prefixIcon: Icon(Icons.search, color: Colors.blue),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.blue),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Text('Sort by: ', style: TextStyle(color: Colors.white70)),
+              DropdownButton<String>(
+                value: _sortCriteria,
+                dropdownColor: Color(0xFF1E293B),
+                style: TextStyle(color: Colors.white),
+                items: [
+                  DropdownMenuItem(value: 'name', child: Text('Name')),
+                  DropdownMenuItem(value: 'price', child: Text('Price')),
+                  DropdownMenuItem(value: 'change', child: Text('Change')),
+                  DropdownMenuItem(value: 'marketCap', child: Text('Market Cap')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _sortCriteria = value!;
+                    _sortCryptos();
+                  });
+                },
+              ),
+              IconButton(
+                icon: Icon(_isAscending ? Icons.arrow_upward : Icons.arrow_downward, color: Colors.white70),
+                onPressed: () {
+                  setState(() {
+                    _isAscending = !_isAscending;
+                    _sortCryptos();
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _filteredCryptos.length,
+            itemBuilder: (context, index) {
+              final crypto = _filteredCryptos[index];
+              return _MarketItem(
+                name: crypto['name'],
+                symbol: crypto['symbol'],
+                price: crypto['price'],
+                change: crypto['change'],
+                isPositive: crypto['isPositive'],
+                marketCap: crypto['marketCap'],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Enhanced Trade Screen with advanced trading tools
+class TradeScreen extends StatefulWidget {
+  @override
+  _TradeScreenState createState() => _TradeScreenState();
+}
+
+class _TradeScreenState extends State<TradeScreen> {
+  String _selectedCrypto = 'BTC';
+  double _amount = 0;
+  bool _isBuy = true;
+  bool _isLimitOrder = false;
+  double _limitPrice = 0;
+  double _stopLoss = 0;
+  double _takeProfit = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Crypto selector
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: DropdownButtonFormField<String>(
+            value: _selectedCrypto,
+            dropdownColor: Color(0xFF1E293B),
+            style: TextStyle(color: Colors.white),
+            items: [
+              DropdownMenuItem(value: 'BTC', child: Text('Bitcoin (BTC)')),
+              DropdownMenuItem(value: 'ETH', child: Text('Ethereum (ETH)')),
+              DropdownMenuItem(value: 'ADA', child: Text('Cardano (ADA)')),
+              DropdownMenuItem(value: 'SOL', child: Text('Solana (SOL)')),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _selectedCrypto = value!;
+              });
+            },
+            decoration: InputDecoration(
+              labelText: 'Select Cryptocurrency',
+              labelStyle: TextStyle(color: Colors.white70),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.blue),
+              ),
+            ),
+          ),
+        ),
+        // Buy/Sell toggle
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    primary: _isBuy ? Colors.green : Colors.grey,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () {
+                    setState(() => _isBuy = true);
+                  },
+                  child: Text('Buy', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    primary: !_isBuy ? Colors.red : Colors.grey,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () {
+                    setState(() => _isBuy = false);
+                  },
+                  child: Text('Sell', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        // Order type toggle
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    primary: !_isLimitOrder ? Colors.blue : Colors.grey,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () {
+                    setState(() => _isLimitOrder = false);
+                  },
+                  child: Text('Market Order', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    primary: _isLimitOrder ? Colors.blue : Colors.grey,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () {
+                    setState(() => _isLimitOrder = true);
+                  },
+                  child: Text('Limit Order', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 16),
+        // Amount input
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            style: TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Amount',
+              labelStyle: TextStyle(color: Colors.white70),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.blue),
+              ),
+              suffixText: _selectedCrypto,
+            ),
+            onChanged: (value) {
+              _amount = double.tryParse(value) ?? 0;
+            },
+          ),
+        ),
+        // Limit price (if limit order)
+        if (_isLimitOrder)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: TextField(
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Limit Price',
+                labelStyle: TextStyle(color: Colors.white70),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+                prefixText: '\$',
+              ),
+              onChanged: (value) {
+                _limitPrice = double.tryParse(value) ?? 0;
+              },
+            ),
+          ),
+        SizedBox(height: 16),
+        // Stop Loss and Take Profit
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Stop Loss',
+                    labelStyle: TextStyle(color: Colors.white70),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white24),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.blue),
+                    ),
+                    prefixText: '\$',
+                  ),
+                  onChanged: (value) {
+                    _stopLoss = double.tryParse(value) ?? 0;
+                  },
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: TextField(
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Take Profit',
+                    labelStyle: TextStyle(color: Colors.white70),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white24),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.blue),
+                    ),
+                    prefixText: '\$',
+                  ),
+                  onChanged: (value) {
+                    _takeProfit = double.tryParse(value) ?? 0;
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 20),
+        // Order summary
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            color: Color(0xFF1E293B),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Order Summary',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Type:', style: TextStyle(color: Colors.grey)),
+                      Text(_isBuy ? 'Buy' : 'Sell', style: TextStyle(color: _isBuy ? Colors.green : Colors.red)),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Order Type:', style: TextStyle(color: Colors.grey)),
+                      Text(_isLimitOrder ? 'Limit' : 'Market'),
+                    ],
+                  ),
+                  if (_isLimitOrder)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Limit Price:', style: TextStyle(color: Colors.grey)),
+                        Text('\$${_limitPrice.toStringAsFixed(2)}'),
+                      ],
+                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Amount:', style: TextStyle(color: Colors.grey)),
+                      Text('$_amount $_selectedCrypto'),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Estimated Total:', style: TextStyle(color: Colors.grey)),
+                      Text('\$${(_amount * (_isLimitOrder ? _limitPrice : 42356.78)).toStringAsFixed(2)}'),
+                    ],
+                  ),
+                  if (_stopLoss > 0)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Stop Loss:', style: TextStyle(color: Colors.grey)),
+                        Text('\$${_stopLoss.toStringAsFixed(2)}'),
+                      ],
+                    ),
+                  if (_takeProfit > 0)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Take Profit:', style: TextStyle(color: Colors.grey)),
+                        Text('\$${_takeProfit.toStringAsFixed(2)}'),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Trade button
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              primary: _isBuy ? Colors.green : Colors.red,
+              padding: EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: _executeTrade,
+            child: Text(
+              'PLACE ${_isBuy ? 'BUY' : 'SELL'} ORDER',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _executeTrade() {
+    // Show a dialog to confirm the trade
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Confirm Trade'),
+          content: Text(
+            'You are about to ${_isBuy ? 'buy' : 'sell'} $_amount $_selectedCrypto ${_isLimitOrder ? 'at \$${_limitPrice.toStringAsFixed(2)}' : 'at market price'}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Execute trade logic here
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Trade executed successfully!'),
+                    backgroundColor: _isBuy ? Colors.green : Colors.red,
+                  ),
+                );
+              },
+              child: Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// Portfolio Screen with analytics
+class PortfolioScreen extends StatefulWidget {
+  @override
+  _PortfolioScreenState createState() => _PortfolioScreenState();
+}
+
+class _PortfolioScreenState extends State<PortfolioScreen> {
+  List<Map<String, dynamic>> _holdings = [];
+  List<Map<String, dynamic>> _transactions = [];
+  double _totalValue = 0;
+  double _totalChange = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPortfolioData();
+  }
+
+  void _loadPortfolioData() {
+    setState(() {
+      _holdings = [
+        {'crypto': 'BTC', 'amount': 0.5, 'avgPrice': 38000, 'currentPrice': 42356.78, 'change': 11.46},
+        {'crypto': 'ETH', 'amount': 2.3, 'avgPrice': 2500, 'currentPrice': 2845.32, 'change': 13.81},
+        {'crypto': 'ADA', 'amount': 1000, 'avgPrice': 0.45, 'currentPrice': 0.58, 'change': 28.89},
+        {'crypto': 'SOL', 'amount': 15, 'avgPrice': 85, 'currentPrice': 98.45, 'change': 15.82},
+      ];
+      
+      _transactions = [
+        {'crypto': 'BTC', 'type': 'Buy', 'amount': 0.1, 'price': 42000, 'date': DateTime.now().subtract(Duration(days: 1))},
+        {'crypto': 'ETH', 'type': 'Sell', 'amount': 0.5, 'price': 2800, 'date': DateTime.now().subtract(Duration(days: 3))},
+        {'crypto': 'ADA', 'type': 'Buy', 'amount': 500, 'price': 0.55, 'date': DateTime.now().subtract(Duration(days: 5))},
+        {'crypto': 'SOL', 'type': 'Buy', 'amount': 10, 'price': 90, 'date': DateTime.now().subtract(Duration(days: 7))},
+      ];
+      
+      _totalValue = _holdings.fold(0, (sum, item) => sum + (item['amount'] * item['currentPrice']));
+      _totalChange = _holdings.fold(0, (sum, item) => sum + (item['amount'] * (item['currentPrice'] - item['avgPrice']))) / 
+                      _holdings.fold(0, (sum, item) => sum + (item['amount'] * item['avgPrice'])) * 100;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Portfolio'),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: 'Holdings'),
+              Tab(text: 'Transactions'),
+              Tab(text: 'Analytics'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            // Holdings Tab
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Card(
+                    color: Color(0xFF1E293B),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Total Portfolio Value',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            '\$${_totalValue.toStringAsFixed(2)}',
+                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            '${_totalChange >= 0 ? '+' : ''}${_totalChange.toStringAsFixed(2)}%',
+                            style: TextStyle(
+                              color: _totalChange >= 0 ? Colors.green : Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _holdings.length,
+                    itemBuilder: (context, index) {
+                      final holding = _holdings[index];
+                      final value = holding['amount'] * holding['currentPrice'];
+                      final profitLoss = value - (holding['amount'] * holding['avgPrice']);
+                      final profitLossPercent = (profitLoss / (holding['amount'] * holding['avgPrice'])) * 100;
+                      
+                      return Card(
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        color: Color(0xFF1E293B),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.blue,
+                            child: Text(holding['crypto']),
+                          ),
+                          title: Text(holding['crypto']),
+                          subtitle: Text('${holding['amount'].toStringAsFixed(4)} units'),
+                          trailing: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '\$${value.toStringAsFixed(2)}',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '${profitLoss >= 0 ? '+' : ''}\$${profitLoss.toStringAsFixed(2)} (${profitLossPercent >= 0 ? '+' : ''}${profitLossPercent.toStringAsFixed(2)}%)',
+                                style: TextStyle(
+                                  color: profitLoss >= 0 ? Colors.green : Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            // Transactions Tab
+            ListView.builder(
+              itemCount: _transactions.length,
+              itemBuilder: (context, index) {
+                final transaction = _transactions[index];
+                final type = transaction['type'] as String;
+                final amount = transaction['amount'] as double;
+                final price = transaction['price'] as double;
+                final date = transaction['date'] as DateTime;
+                final cryptoSymbol = transaction['crypto'] as String;
+                
+                return Card(
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  color: Color(0xFF1E293B),
+                  child: ListTile(
+                    leading: Icon(
+                      type == 'Buy' ? Icons.arrow_downward : Icons.arrow_upward,
+                      color: type == 'Buy' ? Colors.green : Colors.red,
+                    ),
+                    title: Text('$type $cryptoSymbol'),
+                    subtitle: Text('${amount.toStringAsFixed(4)} @ \$${price.toStringAsFixed(2)}'),
+                    trailing: Text(
+                      DateFormat.yMd().add_jm().format(date),
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                );
+              },
+            ),
+            // Analytics Tab
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Portfolio Analytics',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Asset Allocation',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  Container(
+                    height: 200,
+                    child: Placeholder(), // Replace with pie chart
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Performance',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  Container(
+                    height: 200,
+                    child: Placeholder(), // Replace with line chart
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Alerts Screen
+class AlertsScreen extends StatefulWidget {
+  @override
+  _AlertsScreenState createState() => _AlertsScreenState();
+}
+
+class _AlertsScreenState extends State<AlertsScreen> {
+  List<Map<String, dynamic>> _alerts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAlerts();
+  }
+
+  void _loadAlerts() {
+    setState(() {
+      _alerts = [
+        {'crypto': 'BTC', 'condition': 'above', 'price': 45000, 'active': true},
+        {'crypto': 'ETH', 'condition': 'below', 'price': 2500, 'active': true},
+        {'crypto': 'ADA', 'condition': 'above', 'price': 0.65, 'active': false},
+      ];
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Price Alerts'),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: _alerts.length,
+              itemBuilder: (context, index) {
+                final alert = _alerts[index];
+                return Card(
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  color: Color(0xFF1E293B),
+                  child: SwitchListTile(
+                    secondary: CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      child: Text(alert['crypto']),
+                    ),
+                    title: Text('${alert['crypto']} price ${alert['condition']} \$${alert['price']}'),
+                    value: alert['active'],
+                    onChanged: (value) {
+                      setState(() {
+                        _alerts[index]['active'] = value;
+                      });
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: _showAddAlertDialog,
+              style: ElevatedButton.styleFrom(
+                primary: Colors.blue,
+                padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text('ADD NEW ALERT'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddAlertDialog() {
+    String selectedCrypto = 'BTC';
+    String condition = 'above';
+    double price = 0;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Add Price Alert'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedCrypto,
+                    dropdownColor: Color(0xFF1E293B),
+                    style: TextStyle(color: Colors.white),
+                    items: [
+                      DropdownMenuItem(value: 'BTC', child: Text('Bitcoin (BTC)')),
+                      DropdownMenuItem(value: 'ETH', child: Text('Ethereum (ETH)')),
+                      DropdownMenuItem(value: 'ADA', child: Text('Cardano (ADA)')),
+                      DropdownMenuItem(value: 'SOL', child: Text('Solana (SOL)')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCrypto = value!;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Cryptocurrency',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: condition,
+                    dropdownColor: Color(0xFF1E293B),
+                    style: TextStyle(color: Colors.white),
+                    items: [
+                      DropdownMenuItem(value: 'above', child: Text('Above')),
+                      DropdownMenuItem(value: 'below', child: Text('Below')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        condition = value!;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Condition',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  TextField(
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Price',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      prefixText: '\$',
+                    ),
+                    onChanged: (value) {
+                      price = double.tryParse(value) ?? 0;
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (price > 0) {
+                      setState(() {
+                        _alerts.add({
+                          'crypto': selectedCrypto,
+                          'condition': condition,
+                          'price': price,
+                          'active': true,
+                        });
+                      });
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// News Screen
+class NewsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Crypto News'),
+      ),
+      body: ListView(
+        padding: EdgeInsets.all(16),
+        children: [
+          _NewsItem(
+            title: 'Bitcoin Surges Past \$43,000 Amid Institutional Adoption',
+            time: '2 hours ago',
+            source: 'Crypto News',
+          ),
+          _NewsItem(
+            title: 'Ethereum 2.0 Upgrade Scheduled for Next Month',
+            time: '5 hours ago',
+            source: 'Blockchain Daily',
+          ),
+          _NewsItem(
+            title: 'Regulatory Developments in Crypto Markets',
+            time: '1 day ago',
+            source: 'Finance Times',
+          ),
+          _NewsItem(
+            title: 'DeFi Protocols See Record Volume This Quarter',
+            time: '1 day ago',
+            source: 'DeFi Pulse',
+          ),
+          _NewsItem(
+            title: 'NFT Market Continues to Expand Despite Market Volatility',
+            time: '2 days ago',
+            source: 'NFT Weekly',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Settings Screen with more options
+class SettingsScreen extends StatefulWidget {
+  @override
+  _SettingsScreenState createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _biometricEnabled = false;
+  bool _darkModeEnabled = true;
+  bool _notificationsEnabled = true;
+  bool _priceAlertsEnabled = true;
+  String _selectedCurrency = 'USD';
+  String _selectedLanguage = 'English';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Settings'),
+      ),
+      body: ListView(
+        padding: EdgeInsets.all(16),
+        children: [
+          // Account Section
+          Text(
+            'Account',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          Card(
+            color: Color(0xFF1E293B),
+            child: ListTile(
+              leading: Icon(Icons.person, color: Colors.blue),
+              title: Text('Profile'),
+              trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
+              onTap: () {
+                // Navigate to profile
+              },
+            ),
+          ),
+          Card(
+            color: Color(0xFF1E293B),
+            child: ListTile(
+              leading: Icon(Icons.security, color: Colors.blue),
+              title: Text('Security'),
+              trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
+              onTap: () {
+                // Navigate to security settings
+              },
+            ),
+          ),
+          Card(
+            color: Color(0xFF1E293B),
+            child: ListTile(
+              leading: Icon(Icons.account_balance_wallet, color: Colors.blue),
+              title: Text('Payment Methods'),
+              trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
+              onTap: () {
+                // Navigate to payment methods
+              },
+            ),
+          ),
+          SizedBox(height: 24),
+          
+          // Preferences Section
+          Text(
+            'Preferences',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          Card(
+            color: Color(0xFF1E293B),
+            child: SwitchListTile(
+              secondary: Icon(Icons.fingerprint, color: Colors.blue),
+              title: Text('Biometric Login'),
+              subtitle: Text('Use fingerprint to login'),
+              value: _biometricEnabled,
+              onChanged: (value) {
+                setState(() => _biometricEnabled = value);
+              },
+            ),
+          ),
+          Card(
+            color: Color(0xFF1E293B),
+            child: SwitchListTile(
+              secondary: Icon(Icons.dark_mode, color: Colors.blue),
+              title: Text('Dark Mode'),
+              value: _darkModeEnabled,
+              onChanged: (value) {
+                setState(() => _darkModeEnabled = value);
+              },
+            ),
+          ),
+          Card(
+            color: Color(0xFF1E293B),
+            child: ListTile(
+              leading: Icon(Icons.currency_exchange, color: Colors.blue),
+              title: Text('Currency'),
+              trailing: DropdownButton<String>(
+                value: _selectedCurrency,
+                dropdownColor: Color(0xFF1E293B),
+                style: TextStyle(color: Colors.white),
+                items: [
+                  DropdownMenuItem(value: 'USD', child: Text('USD')),
+                  DropdownMenuItem(value: 'EUR', child: Text('EUR')),
+                  DropdownMenuItem(value: 'GBP', child: Text('GBP')),
+                  DropdownMenuItem(value: 'JPY', child: Text('JPY')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCurrency = value!;
+                  });
+                },
+              ),
+            ),
+          ),
+          Card(
+            color: Color(0xFF1E293B),
+            child: ListTile(
+              leading: Icon(Icons.language, color: Colors.blue),
+              title: Text('Language'),
+              trailing: DropdownButton<String>(
+                value: _selectedLanguage,
+                dropdownColor: Color(0xFF1E293B),
+                style: TextStyle(color: Colors.white),
+                items: [
+                  DropdownMenuItem(value: 'English', child: Text('English')),
+                  DropdownMenuItem(value: 'Spanish', child: Text('Spanish')),
+                  DropdownMenuItem(value: 'French', child: Text('French')),
+                  DropdownMenuItem(value: 'German', child: Text('German')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedLanguage = value!;
+                  });
+                },
+              ),
+            ),
+          ),
+          SizedBox(height: 24),
+          
+          // Notifications Section
+          Text(
+            'Notifications',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          Card(
+            color: Color(0xFF1E293B),
+            child: SwitchListTile(
+              secondary: Icon(Icons.notifications, color: Colors.blue),
+              title: Text('Push Notifications'),
+              subtitle: Text('Receive app notifications'),
+              value: _notificationsEnabled,
+              onChanged: (value) {
+                setState(() => _notificationsEnabled = value);
+              },
+            ),
+          ),
+          Card(
+            color: Color(0xFF1E293B),
+            child: SwitchListTile(
+              secondary: Icon(Icons.notifications_active, color: Colors.blue),
+              title: Text('Price Alerts'),
+              subtitle: Text('Get notified about price changes'),
+              value: _priceAlertsEnabled,
+              onChanged: (value) {
+                setState(() => _priceAlertsEnabled = value);
+              },
+            ),
+          ),
+          SizedBox(height: 24),
+          
+          // Support Section
+          Text(
+            'Support',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          Card(
+            color: Color(0xFF1E293B),
+            child: ListTile(
+              leading: Icon(Icons.help, color: Colors.blue),
+              title: Text('Help Center'),
+              trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
+              onTap: () {
+                // Navigate to help
+              },
+            ),
+          ),
+          Card(
+            color: Color(0xFF1E293B),
+            child: ListTile(
+              leading: Icon(Icons.contact_support, color: Colors.blue),
+              title: Text('Contact Us'),
+              trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
+              onTap: () {
+                // Navigate to contact
+              },
+            ),
+          ),
+          Card(
+            color: Color(0xFF1E293B),
+            child: ListTile(
+              leading: Icon(Icons.description, color: Colors.blue),
+              title: Text('Terms & Privacy'),
+              trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey),
+              onTap: () {
+                // Navigate to terms
+              },
+            ),
+          ),
+          SizedBox(height: 24),
+          
+          // Logout Button
+          ElevatedButton(
+            onPressed: _logout,
+            style: ElevatedButton.styleFrom(
+              primary: Colors.red,
+              padding: EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'LOGOUT',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(height: 24),
+          
+          // App Version
+          Center(
+            child: Text(
+              'Bitoz v1.0.0',
+              style: TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', false);
+    
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+}
+
+// Reusable Widgets
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              size: 30,
+              color: color,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(title, style: TextStyle(color: Colors.white)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarketItem extends StatelessWidget {
+  final String name;
+  final String symbol;
+  final double price;
+  final double change;
+  final bool isPositive;
+  final double? marketCap;
+
+  const _MarketItem({
+    required this.name,
+    required this.symbol,
+    required this.price,
+    required this.change,
+    required this.isPositive,
+    this.marketCap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final formatter = NumberFormat.currency(symbol: '\$');
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      color: Color(0xFF1E293B),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.blue,
+          child: Text(symbol),
+        ),
+        title: Text(name),
+        subtitle: Text(symbol),
+        trailing: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              formatter.format(price),
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              '${isPositive ? '+' : ''}${change.toStringAsFixed(2)}%',
+              style: TextStyle(
+                color: isPositive ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (marketCap != null)
+              Text(
+                'MCap: ${NumberFormat.compactCurrency(symbol: '\$').format(marketCap)}',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NewsItem extends StatelessWidget {
+  final String title;
+  final String time;
+  final String? source;
+
+  const _NewsItem({
+    required this.title,
+    required this.time,
+    this.source,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Color(0xFF1E293B),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                if (source != null)
+                  Text(
+                    source!,
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 14,
+                    ),
+                  ),
+                if (source != null) SizedBox(width: 16),
+                Text(
+                  time,
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
